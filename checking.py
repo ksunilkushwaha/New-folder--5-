@@ -45,7 +45,7 @@ def export_to_csv():
     with open(csv_file, 'w', newline='') as f:
         writer = csv.writer(f)
         
-        # Write header
+        # Write header data
         writer.writerow(["Date", "Earnings", "Total Earning", "Expenses", "Total Expenses", "Net"])
         
         # Write each record
