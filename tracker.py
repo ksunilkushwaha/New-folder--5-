@@ -2,7 +2,7 @@ def main():
 
  # --- Main Program ---
 
- # Get all earning items and the total earning
+ # Get all earning items and the total earning from this function
  earning_items, total_earning = get_items("Earning")
 
  # Get all expense items and the total expense
