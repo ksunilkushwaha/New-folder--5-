@@ -1,0 +1,99 @@
+{
+    "records": [
+        {
+            "date": "2025-11-12 14:02:33",
+            "earnings": [
+                {
+                    "name": "work",
+                    "amount": 250
+                },
+                {
+                    "name": "working in feild",
+                    "amount": 300
+                }
+            ],
+            "total_earning": 550,
+            "expenses": [
+                {
+                    "name": "food",
+                    "amount": 100
+                },
+                {
+                    "name": "rent",
+                    "amount": 100
+                },
+                {
+                    "name": "internet data",
+                    "amount": 33
+                }
+            ],
+            "total_expenses": 233,
+            "net": 317
+        },
+        {
+            "date": "2025-11-12 14:05:28",
+            "earnings": [
+                {
+                    "name": "feild visit",
+                    "amount": 200
+                },
+                {
+                    "name": "learning",
+                    "amount": 250
+                },
+                {
+                    "name": "animal keeping",
+                    "amount": 250
+                }
+            ],
+            "total_earning": 700,
+            "expenses": [
+                {
+                    "name": "Rent and food",
+                    "amount": 250
+                },
+                {
+                    "name": "Clothes",
+                    "amount": 120
+                }
+            ],
+            "total_expenses": 370,
+            "net": 330
+        },
+        {
+            "date": "2025-11-12 14:16:07",
+            "earnings": [
+                {
+                    "name": "coding",
+                    "amount": 1000
+                },
+                {
+                    "name": "farming",
+                    "amount": 250
+                },
+                {
+                    "name": "picking",
+                    "amount": 20
+                }
+            ],
+            "total_earning": 1270,
+            "expenses": [
+                {
+                    "name": "Rent and food",
+                    "amount": 200
+                },
+                {
+                    "name": "internet usases",
+                    "amount": 33
+                },
+                {
+                    "name": "clothing",
+                    "amount": 300
+                }
+            ],
+            "total_expenses": 533,
+            "net": 737
+        }
+        
+    ]
+}
