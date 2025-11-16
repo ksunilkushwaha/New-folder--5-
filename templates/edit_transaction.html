@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Edit Transaction</h2>
+  <form method="post">
+    <div class="mb-3">
+      <label for="description" class="form-label">Description</label>
+      <input type="text" class="form-control" id="description" name="description" value="{{ transaction.description }}" required>
+    </div>
+    <div class="mb-3">
+      <label for="amount" class="form-label">Amount</label>
+      <input type="number" class="form-control" id="amount" name="amount" value="{{ transaction.amount }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Update</button>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

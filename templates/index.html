@@ -1,88 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Tracker - Income & Expenses</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
-</head>
-<body>
-    <div class="container">
-        <h1>💰 Daily Tracker</h1>
-        <p class="subtitle">Track your daily income and expenses</p>
-        
-        <form method="POST" action="/calculate">
-            <!-- Earnings Section -->
-            <div class="section earnings-section">
-                <div class="section-title">💹 Your Earnings</div>
-                <div id="earnings-container">
-                    <!-- Dynamic earnings will be added here -->
-                </div>
-                <button type="button" class="add-btn" onclick="addEarning()">+ Add Earning</button>
-            </div>
-            
-            <!-- Expenses Section -->
-            <div class="section expenses-section">
-                <div class="section-title">💸 Your Expenses</div>
-                <div id="expenses-container">
-                    <!-- Dynamic expenses will be added here -->
-                </div>
-                <button type="button" class="add-btn" onclick="addExpense()">+ Add Expense</button>
-            </div>
-            
-            <!-- Submit Button -->
-            <button type="submit">📊 Calculate Summary</button>
-        </form>
-        
-        <div class="reset-link">
-            <a href="/" onclick="document.querySelector('form').reset(); return false;">↻ Reset Form</a>
-        </div>
-        
-        <div class="nav-links">
-            <a href="/history">📋 View History</a>
-        </div>
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Welcome, {{ user.username }}!</h2>
+  <form method="post" action="{{ url_for('calculate') }}">
+    <div id="earnings-section">
+      <h4>Earnings</h4>
+      <div class="row mb-2">
+        <div class="col"><input type="text" name="earning_name_1" class="form-control" placeholder="Earning name" required></div>
+        <div class="col"><input type="number" name="earning_amount_1" class="form-control" placeholder="Amount" required></div>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="addEarning()">Add Earning</button>
     </div>
-
-    <script>
-        let earningCount = 0;
-        let expenseCount = 0;
-
-        function addEarning() {
-            const container = document.getElementById('earnings-container');
-            const id = `earning-${earningCount}`;
-            earningCount++;
-            
-            const itemRow = document.createElement('div');
-            itemRow.className = 'item-row';
-            itemRow.innerHTML = `
-                <input type="text" name="earning_name_${id}" placeholder="e.g., Work, Freelance, Bonus" required>
-                <input type="number" name="earning_amount_${id}" placeholder="Amount (₹)" min="0" required>
-                <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
-            `;
-            container.appendChild(itemRow);
-        }
-
-        function addExpense() {
-            const container = document.getElementById('expenses-container');
-            const id = `expense-${expenseCount}`;
-            expenseCount++;
-            
-            const itemRow = document.createElement('div');
-            itemRow.className = 'item-row';
-            itemRow.innerHTML = `
-                <input type="text" name="expense_name_${id}" placeholder="e.g., Food, Rent, Transport" required>
-                <input type="number" name="expense_amount_${id}" placeholder="Amount (₹)" min="0" required>
-                <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
-            `;
-            container.appendChild(itemRow);
-        }
-
-        // Add one earning and one expense by default
-        window.addEventListener('load', function() {
-            addEarning();
-            addExpense();
-        });
-    </script>
-</body>
-</html>
+    <div id="expenses-section" class="mt-4">
+      <h4>Expenses</h4>
+      <div class="row mb-2">
+        <div class="col"><input type="text" name="expense_name_1" class="form-control" placeholder="Expense name" required></div>
+        <div class="col"><input type="number" name="expense_amount_1" class="form-control" placeholder="Amount" required></div>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="addExpense()">Add Expense</button>
+    </div>
+    <button type="submit" class="btn btn-primary mt-4">Save Day</button>
+  </form>
+  <a href="{{ url_for('history') }}" class="btn btn-info mt-3">📋 View History</a>
+</div>
+<script>
+let earningCount = 1;
+let expenseCount = 1;
+function addEarning() {
+  earningCount++;
+  const section = document.getElementById('earnings-section');
+  const row = document.createElement('div');
+  row.className = 'row mb-2';
+  row.innerHTML = `<div class="col"><input type="text" name="earning_name_${earningCount}" class="form-control" placeholder="Earning name" required></div><div class="col"><input type="number" name="earning_amount_${earningCount}" class="form-control" placeholder="Amount" required></div>`;
+  section.insertBefore(row, section.lastElementChild);
+}
+function addExpense() {
+  expenseCount++;
+  const section = document.getElementById('expenses-section');
+  const row = document.createElement('div');
+  row.className = 'row mb-2';
+  row.innerHTML = `<div class="col"><input type="text" name="expense_name_${expenseCount}" class="form-control" placeholder="Expense name" required></div><div class="col"><input type="number" name="expense_amount_${expenseCount}" class="form-control" placeholder="Amount" required></div>`;
+  section.insertBefore(row, section.lastElementChild);
+}
+</script>
+{% endblock %}
