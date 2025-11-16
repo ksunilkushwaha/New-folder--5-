@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - Daily Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-size: 16px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+        
+        tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .date-cell {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .positive {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .negative {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .net-positive {
+            color: #27ae60;
+            background: #d4edda;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+        
+        .net-negative {
+            color: #e74c3c;
+            background: #f8d7da;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+        
+        .footer-info {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .action-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .action-button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Home</a>
+        <h1>📋 Daily Records History</h1>
+        
+        {% if records %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Earnings</th>
+                        <th>Expenses</th>
+                        <th>Total Earning</th>
+                        <th>Total Expenses</th>
+                        <th>Net</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                        <tr>
+                            <td class="date-cell">{{ record.date }}</td>
+                            <td>
+                                {% for earning in record.earnings %}
+                                    <div>{{ earning.name }}: ₹{{ earning.amount }}</div>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% for expense in record.expenses %}
+                                    <div>{{ expense.name }}: ₹{{ expense.amount }}</div>
+                                {% endfor %}
+                            </td>
+                            <td class="positive">₹{{ record.total_earning }}</td>
+                            <td class="negative">₹{{ record.total_expenses }}</td>
+                            <td>
+                                {% if record.net > 0 %}
+                                    <span class="net-positive">+₹{{ record.net }}</span>
+                                {% elif record.net < 0 %}
+                                    <span class="net-negative">-₹{{ -record.net }}</span>
+                                {% else %}
+                                    <span>₹0</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+            <div class="footer-info">
+                <p>Total Records: <strong>{{ records|length }}</strong></p>
+                <p>Data is automatically saved to tracker_data.json and tracker_data.csv</p>
+            </div>
+        {% else %}
+            <div class="no-data">
+                <p>No records found yet.</p>
+                <p>Start by creating a new entry!</p>
+            </div>
+        {% endif %}
+        
+        <button class="action-button" onclick="window.location.href='/'">🏠 Go to Home</button>
+    </div>
+</body>
+</html>

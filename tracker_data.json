@@ -93,7 +93,58 @@
             ],
             "total_expenses": 533,
             "net": 737
+        },
+        {
+            "date": "2025-11-16 23:10:09",
+            "earnings": [
+                {
+                    "name": "Work",
+                    "amount": 750
+                },
+                {
+                    "name": "Reading",
+                    "amount": 45
+                }
+            ],
+            "total_earning": 795,
+            "expenses": [
+                {
+                    "name": "Eat",
+                    "amount": 100
+                },
+                {
+                    "name": "Rent",
+                    "amount": 200
+                }
+            ],
+            "total_expenses": 300,
+            "net": 495
+        },
+        {
+            "date": "2025-11-16 23:18:55",
+            "earnings": [
+                {
+                    "name": "work",
+                    "amount": 500
+                },
+                {
+                    "name": "youtube",
+                    "amount": 450
+                }
+            ],
+            "total_earning": 950,
+            "expenses": [
+                {
+                    "name": "food",
+                    "amount": 200
+                },
+                {
+                    "name": "Rent and data",
+                    "amount": 50
+                }
+            ],
+            "total_expenses": 250,
+            "net": 700
         }
-        
     ]
 }

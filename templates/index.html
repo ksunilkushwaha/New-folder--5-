@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Tracker - Income & Expenses</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .earnings-section .section-title {
+            color: #27ae60;
+        }
+        
+        .expenses-section .section-title {
+            color: #e74c3c;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.1);
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .add-btn {
+            width: 100%;
+            padding: 10px;
+            background: #f0f0f0;
+            color: #667eea;
+            border: 2px dashed #667eea;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+        
+        .add-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .item-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: flex-end;
+        }
+        
+        .item-row input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .item-row input:first-child {
+            flex: 1.5;
+        }
+        
+        .remove-btn {
+            width: auto;
+            padding: 8px 12px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .remove-btn:hover {
+            background: #c0392b;
+            transform: none;
+        }
+        
+        .reset-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .reset-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .reset-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .nav-links {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        .nav-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Daily Tracker</h1>
+        <p class="subtitle">Track your daily income and expenses</p>
+        
+        <form method="POST" action="/calculate">
+            <!-- Earnings Section -->
+            <div class="section earnings-section">
+                <div class="section-title">💹 Your Earnings</div>
+                <div id="earnings-container">
+                    <!-- Dynamic earnings will be added here -->
+                </div>
+                <button type="button" class="add-btn" onclick="addEarning()">+ Add Earning</button>
+            </div>
+            
+            <!-- Expenses Section -->
+            <div class="section expenses-section">
+                <div class="section-title">💸 Your Expenses</div>
+                <div id="expenses-container">
+                    <!-- Dynamic expenses will be added here -->
+                </div>
+                <button type="button" class="add-btn" onclick="addExpense()">+ Add Expense</button>
+            </div>
+            
+            <!-- Submit Button -->
+            <button type="submit">📊 Calculate Summary</button>
+        </form>
+        
+        <div class="reset-link">
+            <a href="/" onclick="document.querySelector('form').reset(); return false;">↻ Reset Form</a>
+        </div>
+        
+        <div class="nav-links">
+            <a href="/history">📋 View History</a>
+        </div>
+    </div>
+
+    <script>
+        let earningCount = 0;
+        let expenseCount = 0;
+
+        function addEarning() {
+            const container = document.getElementById('earnings-container');
+            const id = `earning-${earningCount}`;
+            earningCount++;
+            
+            const itemRow = document.createElement('div');
+            itemRow.className = 'item-row';
+            itemRow.innerHTML = `
+                <input type="text" name="earning_name_${id}" placeholder="e.g., Work, Freelance, Bonus" required>
+                <input type="number" name="earning_amount_${id}" placeholder="Amount (₹)" min="0" required>
+                <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(itemRow);
+        }
+
+        function addExpense() {
+            const container = document.getElementById('expenses-container');
+            const id = `expense-${expenseCount}`;
+            expenseCount++;
+            
+            const itemRow = document.createElement('div');
+            itemRow.className = 'item-row';
+            itemRow.innerHTML = `
+                <input type="text" name="expense_name_${id}" placeholder="e.g., Food, Rent, Transport" required>
+                <input type="number" name="expense_amount_${id}" placeholder="Amount (₹)" min="0" required>
+                <button type="button" class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(itemRow);
+        }
+
+        // Add one earning and one expense by default
+        window.addEventListener('load', function() {
+            addEarning();
+            addExpense();
+        });
+    </script>
+</body>
+</html>
