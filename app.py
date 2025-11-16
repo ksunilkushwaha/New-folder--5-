@@ -2,15 +2,102 @@ from flask import Flask, render_template, request, jsonify
 import json
 import os
 import csv
+import sqlite3
 from datetime import datetime
+from contextlib import contextmanager
 
 app = Flask(__name__)
 
-DATA_FILE = "tracker_data.json"
+DB_FILE = "tracker_data.db"
+DATA_FILE = "tracker_data.json"  # Keep for backward compatibility
 CSV_FILE = "tracker_data.csv"
 
+@contextmanager
+def get_db():
+    """Context manager for database connections."""
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+def init_db():
+    """Initialize the SQLite database with required tables."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Create records table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT NOT NULL,
+                total_earning INTEGER NOT NULL,
+                total_expenses INTEGER NOT NULL,
+                net INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Create earnings table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS earnings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                record_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                amount INTEGER NOT NULL,
+                FOREIGN KEY (record_id) REFERENCES records (id) ON DELETE CASCADE
+            )
+        ''')
+        
+        # Create expenses table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS expenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                record_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                amount INTEGER NOT NULL,
+                FOREIGN KEY (record_id) REFERENCES records (id) ON DELETE CASCADE
+            )
+        ''')
+        
+        conn.commit()
+
+def save_record_to_db(earning_items, total_earning, expense_items, total_expenses):
+    """Save record to SQLite database."""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Insert into records table
+        cursor.execute('''
+            INSERT INTO records (date, total_earning, total_expenses, net)
+            VALUES (?, ?, ?, ?)
+        ''', (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), total_earning, total_expenses, total_earning - total_expenses))
+        
+        record_id = cursor.lastrowid
+        
+        # Insert earnings
+        for item in earning_items:
+            cursor.execute('''
+                INSERT INTO earnings (record_id, name, amount)
+                VALUES (?, ?, ?)
+            ''', (record_id, item['name'], item['amount']))
+        
+        # Insert expenses
+        for item in expense_items:
+            cursor.execute('''
+                INSERT INTO expenses (record_id, name, amount)
+                VALUES (?, ?, ?)
+            ''', (record_id, item['name'], item['amount']))
+        
+        conn.commit()
+
 def load_existing_data():
-    """Load existing data from the file if it exists."""
+    """Load existing data from JSON file (for backward compatibility)."""
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, 'r', encoding='utf-8') as f:
@@ -19,52 +106,46 @@ def load_existing_data():
             return {"records": []}
     return {"records": []}
 
-def save_data_to_file(earning_items, total_earning, expense_items, total_expenses):
-    """Save the items and totals to a JSON file."""
-    data = load_existing_data()
-    
-    record = {
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "earnings": earning_items,
-        "total_earning": total_earning,
-        "expenses": expense_items,
-        "total_expenses": total_expenses,
-        "net": total_earning - total_expenses
-    }
-    
-    data.setdefault("records", []).append(record)
-    
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-
 def export_to_csv():
-    """Export all saved data from JSON to CSV file."""
-    data = load_existing_data()
-    
-    if not data.get("records"):
-        return False
-    
-    with open(CSV_FILE, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        
-        # Write header
-        writer.writerow(["Date", "Earnings", "Total Earning", "Expenses", "Total Expenses", "Net"])
-        
-        # Write each record
-        for record in data.get("records", []):
-            earnings_str = ", ".join([f"{e['name']}: {e['amount']}" for e in record.get("earnings", [])])
-            expenses_str = ", ".join([f"{e['name']}: {e['amount']}" for e in record.get("expenses", [])])
+    """Export all records from database to CSV file."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM records ORDER BY date')
+            records = cursor.fetchall()
             
-            writer.writerow([
-                record.get("date", ""),
-                earnings_str,
-                record.get("total_earning", 0),
-                expenses_str,
-                record.get("total_expenses", 0),
-                record.get("net", 0)
-            ])
-    
-    return True
+            if not records:
+                return False
+            
+            with open(CSV_FILE, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(["Date", "Earnings", "Total Earning", "Expenses", "Total Expenses", "Net"])
+                
+                for record in records:
+                    record_id = record['id']
+                    
+                    # Fetch earnings and expenses for this record
+                    cursor.execute('SELECT name, amount FROM earnings WHERE record_id = ?', (record_id,))
+                    earnings = cursor.fetchall()
+                    earnings_str = ", ".join([f"{e['name']}: {e['amount']}" for e in earnings])
+                    
+                    cursor.execute('SELECT name, amount FROM expenses WHERE record_id = ?', (record_id,))
+                    expenses = cursor.fetchall()
+                    expenses_str = ", ".join([f"{e['name']}: {e['amount']}" for e in expenses])
+                    
+                    writer.writerow([
+                        record['date'],
+                        earnings_str,
+                        record['total_earning'],
+                        expenses_str,
+                        record['total_expenses'],
+                        record['net']
+                    ])
+            
+            return True
+    except Exception as e:
+        print(f"Error exporting to CSV: {e}")
+        return False
 
 @app.route('/')
 def home():
@@ -122,9 +203,9 @@ def calculate():
             status = "⚖️ Your earnings and expenses are equal."
             status_color = "blue"
         
-        # Save data to files
-        save_data_to_file(earning_items, total_earning, expense_items, total_expenses)
-        export_to_csv()
+        # Save data to database
+        save_record_to_db(earning_items, total_earning, expense_items, total_expenses)
+        export_to_csv()  # Also export to CSV for backup
         
         # Prepare data to send to results page
         result_data = {
@@ -144,10 +225,40 @@ def calculate():
 
 @app.route('/history')
 def history():
-    """Display all saved records."""
-    data = load_existing_data()
-    records = data.get("records", [])
-    return render_template('history.html', records=records)
+    """Display all saved records from database."""
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM records ORDER BY date DESC')
+            db_records = cursor.fetchall()
+            
+            # Reconstruct records with earnings and expenses
+            records = []
+            for record in db_records:
+                record_id = record['id']
+                
+                # Fetch earnings
+                cursor.execute('SELECT name, amount FROM earnings WHERE record_id = ? ORDER BY id', (record_id,))
+                earnings = [dict(row) for row in cursor.fetchall()]
+                
+                # Fetch expenses
+                cursor.execute('SELECT name, amount FROM expenses WHERE record_id = ? ORDER BY id', (record_id,))
+                expenses = [dict(row) for row in cursor.fetchall()]
+                
+                records.append({
+                    'date': record['date'],
+                    'earnings': earnings,
+                    'expenses': expenses,
+                    'total_earning': record['total_earning'],
+                    'total_expenses': record['total_expenses'],
+                    'net': record['net']
+                })
+            
+            return render_template('history.html', records=records)
+    except Exception as e:
+        print(f"Error loading history: {e}")
+        return render_template('history.html', records=[])
 
 if __name__ == '__main__':
+    init_db()  # Initialize database on startup
     app.run(debug=True, port=5000)

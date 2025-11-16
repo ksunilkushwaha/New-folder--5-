@@ -4,133 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History - Daily Tracker</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 40px;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 28px;
-        }
-        
-        .back-link {
-            display: inline-block;
-            margin-bottom: 20px;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        
-        .back-link:hover {
-            text-decoration: underline;
-        }
-        
-        .no-data {
-            text-align: center;
-            color: #999;
-            padding: 40px;
-            font-size: 16px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        
-        th {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px;
-            text-align: left;
-            font-weight: bold;
-        }
-        
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e0e0e0;
-            font-size: 14px;
-        }
-        
-        tr:hover {
-            background: #f9f9f9;
-        }
-        
-        .date-cell {
-            color: #667eea;
-            font-weight: bold;
-        }
-        
-        .positive {
-            color: #27ae60;
-            font-weight: bold;
-        }
-        
-        .negative {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        
-        .net-positive {
-            color: #27ae60;
-            background: #d4edda;
-            padding: 2px 8px;
-            border-radius: 3px;
-        }
-        
-        .net-negative {
-            color: #e74c3c;
-            background: #f8d7da;
-            padding: 2px 8px;
-            border-radius: 3px;
-        }
-        
-        .footer-info {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-            color: #666;
-            font-size: 14px;
-        }
-        
-        .action-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 20px;
-            width: 100%;
-        }
-        
-        .action-button:hover {
-            opacity: 0.9;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -138,6 +13,16 @@
         <h1>📋 Daily Records History</h1>
         
         {% if records %}
+            <div class="chart-container">
+                <div class="chart-title">📊 Earnings vs Expenses Overview</div>
+                <canvas id="comparisonChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">💹 Earnings Trend</div>
+                <canvas id="earningsChart"></canvas>
+            </div>
+            
             <table>
                 <thead>
                     <tr>
@@ -192,5 +77,112 @@
         
         <button class="action-button" onclick="window.location.href='/'">🏠 Go to Home</button>
     </div>
-</body>
-</html>
+
+    <script>
+        // Prepare chart data from records
+        const records = {{ records|tojson }};
+        
+        if (records && records.length > 0) {
+            // Reverse to show chronological order (oldest first)
+            const sortedRecords = records.reverse();
+            
+            const dates = sortedRecords.map(r => new Date(r.date).toLocaleDateString());
+            const earnings = sortedRecords.map(r => r.total_earning);
+            const expenses = sortedRecords.map(r => r.total_expenses);
+            const netAmounts = sortedRecords.map(r => r.net);
+            
+            // Bar Chart: Earnings vs Expenses Comparison
+            const comparisonCtx = document.getElementById('comparisonChart');
+            if (comparisonCtx) {
+                new Chart(comparisonCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: dates,
+                        datasets: [
+                            {
+                                label: 'Total Earnings (₹)',
+                                data: earnings,
+                                backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                                borderColor: 'rgba(39, 174, 96, 1)',
+                                borderWidth: 2
+                            },
+                            {
+                                label: 'Total Expenses (₹)',
+                                data: expenses,
+                                backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                                borderColor: 'rgba(231, 76, 60, 1)',
+                                borderWidth: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: { size: 12, weight: 'bold' }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { 
+                                    callback: function(value) {
+                                        return '₹' + value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Line Chart: Net Amount Trend
+            const earningsCtx = document.getElementById('earningsChart');
+            if (earningsCtx) {
+                new Chart(earningsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [
+                            {
+                                label: 'Net Amount (₹)',
+                                data: netAmounts,
+                                borderColor: 'rgba(102, 126, 234, 1)',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                pointRadius: 5,
+                                pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                                pointBorderColor: 'white',
+                                pointBorderWidth: 2,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: { size: 12, weight: 'bold' }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹' + value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+    </script>
