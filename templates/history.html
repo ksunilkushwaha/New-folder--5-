@@ -14,6 +14,26 @@
         <h1 class="mb-4"><i class="bi bi-clock-history"></i> 📋 Daily Records History</h1>
         
         {% if records %}
+            <!-- Charts Section -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Earnings vs Expenses</h5>
+                            <canvas id="comparisonChart" height="100"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">Net Trend</h5>
+                            <canvas id="earningsChart" height="80"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="row">
                 {% for record in records %}
                 <div class="col-md-6 mb-4">
