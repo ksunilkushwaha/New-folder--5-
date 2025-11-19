@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = 'REPLACE_WITH_A_SECURE_RANDOM_KEY'
+app.secret_key = os.getenv('SECRET_KEY')
 
 # Flask-Login setup
 login_manager = LoginManager()
@@ -367,4 +367,4 @@ def delete_transaction(transaction_id):
 
 if __name__ == '__main__':
     init_db()  # Initialize database on startup
-    app.run(debug=True, port=5000)
+    app.run(debug=os.getenv('FLASK_DEBUG', '0') == '1', port=5000)

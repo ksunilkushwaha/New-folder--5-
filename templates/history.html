@@ -1,209 +1,201 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History - Daily Tracker</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-</head>
-<body>
-    <div class="container mt-5">
-        <a href="/" class="back-link">← Back to Home</a>
-        <h1 class="mb-4"><i class="bi bi-clock-history"></i> 📋 Daily Records History</h1>
-        
-        {% if records %}
-            <!-- Charts Section -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">Earnings vs Expenses</h5>
-                            <canvas id="comparisonChart" height="100"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12">
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">Net Trend</h5>
-                            <canvas id="earningsChart" height="80"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+{% extends "base.html" %}
 
-            <div class="row">
-                {% for record in records %}
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-primary text-white">
-                            <strong>{{ record.date }}</strong>
-                            <span class="badge bg-info float-end">Net: {{ record.net }}</span>
-                        </div>
-                        <div class="card-body">
-                            <h5 class="card-title">Earnings</h5>
-                            {% if record.earnings %}
-                              <ul class="list-group mb-3">
-                                {% for earning in record.earnings %}
-                                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i class="bi bi-cash-coin text-success"></i> {{ earning.description }}</span>
-                                    <span class="badge bg-success">{{ earning.amount }}</span>
-                                    <span>
-                                      <a href="{{ url_for('edit_transaction', transaction_id=earning.id) }}" class="btn btn-sm btn-outline-warning">Edit</a>
-                                      <form method="post" action="{{ url_for('delete_transaction', transaction_id=earning.id) }}" style="display:inline;">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                      </form>
-                                    </span>
-                                  </li>
-                                {% endfor %}
-                              </ul>
-                            {% else %}
-                              <span class="text-muted">No earnings</span>
-                            {% endif %}
-                            <h5 class="card-title">Expenses</h5>
-                            {% if record.expenses %}
-                              <ul class="list-group mb-3">
-                                {% for expense in record.expenses %}
-                                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><i class="bi bi-cart-dash text-danger"></i> {{ expense.description }}</span>
-                                    <span class="badge bg-danger">{{ expense.amount }}</span>
-                                    <span>
-                                      <a href="{{ url_for('edit_transaction', transaction_id=expense.id) }}" class="btn btn-sm btn-outline-warning">Edit</a>
-                                      <form method="post" action="{{ url_for('delete_transaction', transaction_id=expense.id) }}" style="display:inline;">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                      </form>
-                                    </span>
-                                  </li>
-                                {% endfor %}
-                              </ul>
-                            {% else %}
-                              <span class="text-muted">No expenses</span>
-                            {% endif %}
-                            <div class="mt-3">
-                              <span class="badge bg-success">Total Earnings: {{ record.total_earning }}</span>
-                              <span class="badge bg-danger">Total Expenses: {{ record.total_expenses }}</span>
-                              <span class="badge bg-secondary">Net: {{ record.net }}</span>
-                            </div>
-                        </div>
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+    <a href="/" class="back-link">← Back to Home</a>
+    <h1 class="mb-4 text-center"><i class="bi bi-clock-history"></i> 📋 Daily Records History</h1>
+
+    {% if records %}
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-center">Earnings vs Expenses</h5>
+                    <div class="chart-container">
+                        <canvas id="comparisonChart"></canvas>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-        {% else %}
-            <div class="alert alert-info">No records found yet. Start by creating a new entry!</div>
-        {% endif %}
-        <button class="btn btn-primary mt-4" onclick="window.location.href='/'">🏠 Go to Home</button>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-center">Net Trend</h5>
+                    <div class="chart-container">
+                        <canvas id="earningsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script>
-        // Prepare chart data from records
-        const records = JSON.parse('{{ records|tojson|safe }}');
-        
-        if (records && records.length > 0) {
-            // Reverse to show chronological order (oldest first)
-            const sortedRecords = records.reverse();
-            
-            const dates = sortedRecords.map(r => new Date(r.date).toLocaleDateString());
-            const earnings = sortedRecords.map(r => r.total_earning);
-            const expenses = sortedRecords.map(r => r.total_expenses);
-            const netAmounts = sortedRecords.map(r => r.net);
-            
-            // Bar Chart: Earnings vs Expenses Comparison
-            const comparisonCtx = document.getElementById('comparisonChart');
-            if (comparisonCtx) {
-                new Chart(comparisonCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: dates,
-                        datasets: [
-                            {
-                                label: 'Total Earnings (₹)',
-                                data: earnings,
-                                backgroundColor: 'rgba(39, 174, 96, 0.7)',
-                                borderColor: 'rgba(39, 174, 96, 1)',
-                                borderWidth: 2
-                            },
-                            {
-                                label: 'Total Expenses (₹)',
-                                data: expenses,
-                                backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                                borderColor: 'rgba(231, 76, 60, 1)',
-                                borderWidth: 2
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    font: { size: 12, weight: 'bold' }
-                                }
-                            }
+    <div class="row">
+        {% for record in records %}
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <strong>{{ record.date }}</strong>
+                    <span class="badge bg-light text-dark">Net: ₹{{ record.net }}</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-success">Earnings</h6>
+                    {% if record.earnings %}
+                    <ul class="list-group list-group-flush mb-3">
+                        {% for earning in record.earnings %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="bi bi-cash-coin text-success"></i> {{ earning.description }}</span>
+                            <span class="badge bg-success rounded-pill">₹{{ earning.amount }}</span>
+                        </li>
+                        <div class="d-flex justify-content-end gap-2 mb-2">
+                            <a href="{{ url_for('edit_transaction', transaction_id=earning.id) }}"
+                                class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.8rem;">Edit</a>
+                            <form method="post" action="{{ url_for('delete_transaction', transaction_id=earning.id) }}"
+                                style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                                    style="font-size: 0.8rem;">Delete</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted small">No earnings recorded.</p>
+                    {% endif %}
+
+                    <h6 class="card-subtitle mb-2 text-danger mt-3">Expenses</h6>
+                    {% if record.expenses %}
+                    <ul class="list-group list-group-flush mb-3">
+                        {% for expense in record.expenses %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="bi bi-cart-dash text-danger"></i> {{ expense.description }}</span>
+                            <span class="badge bg-danger rounded-pill">₹{{ expense.amount }}</span>
+                        </li>
+                        <div class="d-flex justify-content-end gap-2 mb-2">
+                            <a href="{{ url_for('edit_transaction', transaction_id=expense.id) }}"
+                                class="btn btn-sm btn-outline-warning py-0" style="font-size: 0.8rem;">Edit</a>
+                            <form method="post" action="{{ url_for('delete_transaction', transaction_id=expense.id) }}"
+                                style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-danger py-0"
+                                    style="font-size: 0.8rem;">Delete</button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted small">No expenses recorded.</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between small fw-bold">
+                        <span class="text-success">Total: ₹{{ record.total_earning }}</span>
+                        <span class="text-danger">Total: ₹{{ record.total_expenses }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">No records found yet. Start by creating a new entry!</div>
+    {% endif %}
+    <div class="text-center mb-5">
+        <a href="/" class="btn btn-primary mt-4">🏠 Go to Home</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Prepare chart data from records
+    const records = JSON.parse('{{ records|tojson|safe }}');
+
+    if (records && records.length > 0) {
+        // Reverse to show chronological order (oldest first)
+        const sortedRecords = [...records].reverse();
+
+        const dates = sortedRecords.map(r => new Date(r.date).toLocaleDateString());
+        const earnings = sortedRecords.map(r => r.total_earning);
+        const expenses = sortedRecords.map(r => r.total_expenses);
+        const netAmounts = sortedRecords.map(r => r.net);
+
+        // Bar Chart: Earnings vs Expenses Comparison
+        const comparisonCtx = document.getElementById('comparisonChart');
+        if (comparisonCtx) {
+            new Chart(comparisonCtx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Earnings',
+                            data: earnings,
+                            backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                            borderColor: 'rgba(39, 174, 96, 1)',
+                            borderWidth: 1
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { 
-                                    callback: function(value) {
-                                        return '₹' + value;
-                                    }
-                                }
-                            }
+                        {
+                            label: 'Expenses',
+                            data: expenses,
+                            backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                            borderColor: 'rgba(231, 76, 60, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: value => '₹' + value }
                         }
                     }
-                });
-            }
-            
-            // Line Chart: Net Amount Trend
-            const earningsCtx = document.getElementById('earningsChart');
-            if (earningsCtx) {
-                new Chart(earningsCtx, {
-                    type: 'line',
-                    data: {
-                        labels: dates,
-                        datasets: [
-                            {
-                                label: 'Net Amount (₹)',
-                                data: netAmounts,
-                                borderColor: 'rgba(102, 126, 234, 1)',
-                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                                borderWidth: 3,
-                                fill: true,
-                                pointRadius: 5,
-                                pointBackgroundColor: 'rgba(102, 126, 234, 1)',
-                                pointBorderColor: 'white',
-                                pointBorderWidth: 2,
-                                tension: 0.4
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: {
-                                    font: { size: 12, weight: 'bold' }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                ticks: {
-                                    callback: function(value) {
-                                        return '₹' + value;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
+                }
+            });
         }
-    </script>
-</body>
-</html>
+
+        // Line Chart: Net Amount Trend
+        const earningsCtx = document.getElementById('earningsChart');
+        if (earningsCtx) {
+            new Chart(earningsCtx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Net Amount',
+                            data: netAmounts,
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { callback: value => '₹' + value }
+                        }
+                    }
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}
