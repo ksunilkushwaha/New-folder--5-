@@ -3,9 +3,14 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 import json
 import os
 import csv
-import sqlite3
+import csv
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from datetime import datetime
 from contextlib import contextmanager
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'REPLACE_WITH_A_SECURE_RANDOM_KEY'
@@ -26,7 +31,7 @@ class User(UserMixin):
     def get(user_id):
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+            cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
             user = cursor.fetchone()
             if user:
                 return User(user['id'], user['username'], user['password_hash'])
@@ -36,7 +41,7 @@ class User(UserMixin):
     def get_by_username(username):
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+            cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
             user = cursor.fetchone()
             if user:
                 return User(user['id'], user['username'], user['password_hash'])
@@ -60,7 +65,7 @@ def register():
         password_hash = generate_password_hash(password)
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('INSERT INTO users (username, password_hash) VALUES (?, ?)', (username, password_hash))
+            cursor.execute('INSERT INTO users (username, password_hash) VALUES (%s, %s)', (username, password_hash))
         flash('Registration successful. Please log in.')
         return redirect(url_for('login'))
     return render_template('register.html')
@@ -96,8 +101,7 @@ CSV_FILE = "tracker_data.csv"
 @contextmanager
 def get_db():
     """Context manager for database connections."""
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(os.getenv('DATABASE_URL'), cursor_factory=RealDictCursor)
     try:
         yield conn
         conn.commit()
@@ -108,14 +112,14 @@ def get_db():
         conn.close()
 
 def init_db():
-    """Initialize the SQLite database with required tables."""
+    """Initialize the PostgreSQL database with required tables."""
     with get_db() as conn:
         cursor = conn.cursor()
         
         # Create users table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 username TEXT UNIQUE NOT NULL,
                 password_hash TEXT NOT NULL
             )
@@ -123,7 +127,7 @@ def init_db():
         # Create transactions table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS transactions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 date TEXT NOT NULL,
                 description TEXT NOT NULL,
                 amount INTEGER NOT NULL,
@@ -173,11 +177,11 @@ def export_to_csv():
                     record_id = record['id']
                     
                     # Fetch earnings and expenses for this record
-                    cursor.execute('SELECT name, amount FROM earnings WHERE record_id = ?', (record_id,))
+                    cursor.execute('SELECT name, amount FROM earnings WHERE record_id = %s', (record_id,))
                     earnings = cursor.fetchall()
                     earnings_str = ", ".join([f"{e['name']}: {e['amount']}" for e in earnings])
                     
-                    cursor.execute('SELECT name, amount FROM expenses WHERE record_id = ?', (record_id,))
+                    cursor.execute('SELECT name, amount FROM expenses WHERE record_id = %s', (record_id,))
                     expenses = cursor.fetchall()
                     expenses_str = ", ".join([f"{e['name']}: {e['amount']}" for e in expenses])
                     
@@ -263,12 +267,12 @@ def calculate():
             for item in earning_items:
                 cursor.execute('''
                     INSERT INTO transactions (date, description, amount, type, user_id)
-                    VALUES (?, ?, ?, 'earning', ?)
+                    VALUES (%s, %s, %s, 'earning', %s)
                 ''', (now, item['name'], item['amount'], user_id))
             for item in expense_items:
                 cursor.execute('''
                     INSERT INTO transactions (date, description, amount, type, user_id)
-                    VALUES (?, ?, ?, 'expense', ?)
+                    VALUES (%s, %s, %s, 'expense', %s)
                 ''', (now, item['name'], item['amount'], user_id))
         
         # Prepare data to send to results page
@@ -299,7 +303,7 @@ def history():
             cursor.execute('''
                 SELECT id, date, description, amount, type
                 FROM transactions
-                WHERE user_id = ?
+                WHERE user_id = %s
                 ORDER BY date DESC
             ''', (user_id,))
             all_transactions = cursor.fetchall()
@@ -338,7 +342,7 @@ def history():
 def edit_transaction(transaction_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM transactions WHERE id = ? AND user_id = ?', (transaction_id, current_user.id))
+        cursor.execute('SELECT * FROM transactions WHERE id = %s AND user_id = %s', (transaction_id, current_user.id))
         transaction = cursor.fetchone()
         if not transaction:
             flash('Transaction not found.')
@@ -346,7 +350,7 @@ def edit_transaction(transaction_id):
         if request.method == 'POST':
             description = request.form['description']
             amount = request.form['amount']
-            cursor.execute('UPDATE transactions SET description = ?, amount = ? WHERE id = ?', (description, amount, transaction_id))
+            cursor.execute('UPDATE transactions SET description = %s, amount = %s WHERE id = %s', (description, amount, transaction_id))
             flash('Transaction updated.')
             return redirect(url_for('history'))
         return render_template('edit_transaction.html', transaction=transaction)
@@ -357,7 +361,7 @@ def edit_transaction(transaction_id):
 def delete_transaction(transaction_id):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute('DELETE FROM transactions WHERE id = ? AND user_id = ?', (transaction_id, current_user.id))
+        cursor.execute('DELETE FROM transactions WHERE id = %s AND user_id = %s', (transaction_id, current_user.id))
         flash('Transaction deleted.')
     return redirect(url_for('history'))
 

@@ -3,3 +3,5 @@ Werkzeug==2.3.7
 gunicorn==21.2.0
 flask-login==0.6.3
 # Chart.js is a client-side library included via CDN in templates (no pip package)
+psycopg2-binary
+python-dotenv
